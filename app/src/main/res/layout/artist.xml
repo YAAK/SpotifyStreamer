@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/view_artist"
+    android:orientation="horizontal"
+    style="@style/ListItem" >
+
+    <ImageView
+        style="@style/ListItemImage"
+        android:id="@+id/artist_photo" />
+
+    <TextView
+        style="@style/ListItemText"
+        android:textSize="16sp"
+        android:id="@+id/artist_name" />
+</LinearLayout>

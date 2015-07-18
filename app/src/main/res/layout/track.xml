@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/view_track"
+    android:orientation="horizontal"
+    style="@style/ListItem">
+
+    <ImageView
+        android:id="@+id/track_photo"
+        style="@style/ListItemImage" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            style="@style/ListItemText"
+            android:textSize="16sp"
+            android:id="@+id/track_name"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@+id/track_photo"
+            android:layout_toEndOf="@+id/track_photo" />
+
+        <TextView
+            style="@style/ListItemText"
+            android:textColor="#aaaaaa"
+            android:id="@+id/track_album_name"
+            android:layout_below="@+id/track_name"
+            android:layout_toRightOf="@+id/track_photo"
+            android:layout_toEndOf="@+id/track_photo" />
+    </LinearLayout>
+
+</LinearLayout>
