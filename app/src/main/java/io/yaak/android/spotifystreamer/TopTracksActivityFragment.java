@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -32,6 +33,8 @@ public class TopTracksActivityFragment extends Fragment {
     private final String LOG_TAG = TopTracksActivityFragment.class.getSimpleName();
     protected static TrackAdapter trackAdapter;
     private List<ParcelableTrack> topTracksList = new ArrayList<>();
+    private String mArtistId;
+    private String mArtistName;
 
     public TopTracksActivityFragment() {
     }
@@ -66,14 +69,21 @@ public class TopTracksActivityFragment extends Fragment {
         Log.v(LOG_TAG, " in onCreate");
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState == null || !savedInstanceState.containsKey("topTracksList")) {
+        if (savedInstanceState == null){
             Intent intent = getActivity().getIntent();
-            String artistId = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistId");
-            String artistName = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistName");
-            ((ActionBarActivity) getActivity()).getSupportActionBar().setSubtitle(artistName);
-            (new TopTracksTask()).execute(artistId);
+            mArtistId = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistId");
+            mArtistName = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistName");
+            ((ActionBarActivity) getActivity()).getSupportActionBar().setSubtitle(mArtistName);
+            if (mArtistId != null) {
+                (new TopTracksTask()).execute(mArtistId);
+            }
+
+        } else if (!savedInstanceState.containsKey("topTracksList")) {
+            // What should I do?
         } else {
             topTracksList = savedInstanceState.getParcelableArrayList("topTracksList");
+            mArtistId = savedInstanceState.getString("mArtistId");
+            mArtistName = savedInstanceState.getString("mArtistName");
             updateView();
         }
     }
@@ -90,12 +100,28 @@ public class TopTracksActivityFragment extends Fragment {
         ListView tracksListView = (ListView) rootView.findViewById(R.id.listview_tracks);
         tracksListView.setAdapter(trackAdapter);
 
+        tracksListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                ParcelableTrack selectedTrack = trackAdapter.getItem(position);
+                String extraBaseStr = getActivity().getClass().getPackage().toString();
+                Intent playerIntent = new Intent(getActivity(), PlayerActivity.class)
+                        .putExtra(extraBaseStr + "ArtistName", mArtistName)
+                        .putExtra(extraBaseStr + "AlbumName", selectedTrack.album.name)
+                        .putExtra(extraBaseStr + "TrackName", selectedTrack.name)
+                        .putExtra(extraBaseStr + "AlbumImage", selectedTrack.album.image_url);
+                startActivity(playerIntent);
+            }
+        });
+
         return rootView;
     }
 
     public void onSaveInstanceState(Bundle outState) {
         Log.i(LOG_TAG, " in onSaveInstanceState");
-        outState.putParcelableArrayList("topTracksList", (ArrayList)topTracksList);
+        outState.putParcelableArrayList("topTracksList", (ArrayList) topTracksList);
+        outState.putString("mArtistId", mArtistId);
+        outState.putString("mArtistName", mArtistName);
         super.onSaveInstanceState(outState);
     }
 
@@ -107,7 +133,7 @@ public class TopTracksActivityFragment extends Fragment {
             if (params.length < 1) {
                 return null;
             }
-            if (params[0].length() == 0) {
+            if (params[0] == null || params[0].length() == 0) {
                 return null;
             }
 
