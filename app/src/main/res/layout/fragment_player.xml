@@ -47,7 +47,7 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <EditText
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:inputType="time"
@@ -56,7 +56,7 @@
             android:layout_gravity="start"
             android:gravity="start" />
 
-        <EditText
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:inputType="time"
@@ -77,8 +77,8 @@
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_rew"
-            android:id="@+id/btn_rwd" />
+            android:src="@android:drawable/ic_media_previous"
+            android:id="@+id/btn_prev" />
 
         <ImageButton
             style="?android:attr/buttonStyleSmall"
@@ -91,8 +91,8 @@
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_ff"
-            android:id="@+id/btn_fwd" />
+            android:src="@android:drawable/ic_media_next"
+            android:id="@+id/btn_next" />
 
 
     </LinearLayout>
