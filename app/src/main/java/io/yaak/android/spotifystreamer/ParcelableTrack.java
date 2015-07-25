@@ -59,7 +59,7 @@ public class ParcelableTrack implements Parcelable {
             this.id = albumSimple.id;
             this.name = albumSimple.name;
             if (albumSimple.images.size() > 0) {
-                this.image_url = albumSimple.images.get(2).url;
+                this.image_url = albumSimple.images.get(0).url;
             }
             else {
                 this.image_url = null;
