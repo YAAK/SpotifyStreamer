@@ -12,6 +12,12 @@ public class PlayerActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
+        if (savedInstanceState == null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.player_fragment_container, new PlayerActivityFragment())
+                    .commit();
+        }
     }
 
     @Override
