@@ -69,10 +69,10 @@ public class PlayerActivityFragment extends Fragment {
         Log.v(LOG_TAG, " in onCreateView");
 
         View rootView =  inflater.inflate(R.layout.fragment_player, container, false);
-        TextView artistName = (TextView) rootView.findViewById(R.id.player_artist_name);
-        TextView albumName = (TextView) rootView.findViewById(R.id.player_album_name);
-        TextView trackName = (TextView) rootView.findViewById(R.id.player_track_name);
-        ImageView albumImage = (ImageView) rootView.findViewById(R.id.player_album_image);
+        final TextView artistName = (TextView) rootView.findViewById(R.id.player_artist_name);
+        final TextView albumName = (TextView) rootView.findViewById(R.id.player_album_name);
+        final TextView trackName = (TextView) rootView.findViewById(R.id.player_track_name);
+        final ImageView albumImage = (ImageView) rootView.findViewById(R.id.player_album_image);
 
         artistName.setText(mArtistName);
         albumName.setText(mTrack.album.name);
@@ -109,34 +109,65 @@ public class PlayerActivityFragment extends Fragment {
         nextBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPosition += 1;
-                mTrack = mTopTracksList.get(mPosition);
-                Intent playIntent = new Intent(getActivity(), PlayerService.class)
-                        .putExtra(extraBaseStr + ".Track", mTrack);
-                playIntent.setAction(PlayerService.ACTION_PLAY);
-                playBtn.setTag("Pause");
-                playBtn.setImageResource(android.R.drawable.ic_media_pause);
-                getActivity().startService(playIntent);
+                if (mPosition < mTopTracksList.size() - 1) {
+                    mPosition += 1;
+                    mTrack = mTopTracksList.get(mPosition);
+
+                    albumName.setText(mTrack.album.name);
+                    trackName.setText(mTrack.name);
+                    Picasso.with(getActivity())
+                            .load(mTrack.album.image_url)
+                            .placeholder(R.drawable.artist_placeholder)
+                            .resize(300, 300).centerCrop().into(albumImage);
+
+                    Intent playIntent = new Intent(getActivity(), PlayerService.class)
+                            .putExtra(extraBaseStr + ".Track", mTrack);
+                    playIntent.setAction(PlayerService.ACTION_PLAY);
+                    playBtn.setTag("Pause");
+                    playBtn.setImageResource(android.R.drawable.ic_media_pause);
+                    getActivity().startService(playIntent);
+                } else {
+                    Toast toast = Toast.makeText(getActivity(), R.string.no_next_track, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
             }
         });
 
         prevBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPosition -= 1;
-                mTrack = mTopTracksList.get(mPosition);
-                Intent playIntent = new Intent(getActivity(), PlayerService.class)
-                        .putExtra(extraBaseStr + ".Track", mTrack);
-                playIntent.setAction(PlayerService.ACTION_PLAY);
-                playBtn.setTag("Pause");
-                playBtn.setImageResource(android.R.drawable.ic_media_pause);
-                getActivity().startService(playIntent);
+                if (mPosition > 0) {
+                    mPosition -= 1;
+                    mTrack = mTopTracksList.get(mPosition);
+
+                    albumName.setText(mTrack.album.name);
+                    trackName.setText(mTrack.name);
+                    Picasso.with(getActivity())
+                            .load(mTrack.album.image_url)
+                            .placeholder(R.drawable.artist_placeholder)
+                            .resize(300, 300).centerCrop().into(albumImage);
+
+                    Intent playIntent = new Intent(getActivity(), PlayerService.class)
+                            .putExtra(extraBaseStr + ".Track", mTrack);
+                    playIntent.setAction(PlayerService.ACTION_PLAY);
+                    playBtn.setTag("Pause");
+                    playBtn.setImageResource(android.R.drawable.ic_media_pause);
+                    getActivity().startService(playIntent);
+                } else {
+                    Toast toast = Toast.makeText(getActivity(), R.string.no_prev_track, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
             }
         });
 
         return rootView;
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // TODO Stop PlayerService
+        //
 
-
+    }
 }
