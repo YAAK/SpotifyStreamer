@@ -104,12 +104,15 @@ public class TopTracksActivityFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ParcelableTrack selectedTrack = trackAdapter.getItem(position);
-                String extraBaseStr = getActivity().getClass().getPackage().toString();
+                String extraBaseStr = this.getClass().getPackage().toString();
+                Bundle tracksBundle = new Bundle();
+                tracksBundle.putParcelableArrayList("topTracksList",(ArrayList)topTracksList);
+
                 Intent playerIntent = new Intent(getActivity(), PlayerActivity.class)
-                        .putExtra(extraBaseStr + "ArtistName", mArtistName)
-                        .putExtra(extraBaseStr + "AlbumName", selectedTrack.album.name)
-                        .putExtra(extraBaseStr + "TrackName", selectedTrack.name)
-                        .putExtra(extraBaseStr + "AlbumImage", selectedTrack.album.image_url);
+                        .putExtra(extraBaseStr + ".Track", selectedTrack)
+                        .putExtra(extraBaseStr + ".ArtistName", mArtistName)
+                        .putExtra(extraBaseStr + ".Position", position)
+                        .putExtra(extraBaseStr + ".TrackBundle", tracksBundle);
                 startActivity(playerIntent);
             }
         });
