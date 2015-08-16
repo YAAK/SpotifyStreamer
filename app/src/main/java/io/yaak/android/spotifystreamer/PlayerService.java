@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -32,19 +33,15 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     private static final int STATE_PLAYBACK_COMPLETE = 7;
     private static int CURRENT_STATE = 0;
 
-    // TODO: Rename parameters
     MediaPlayer mMediaPlayer = null;
     ParcelableTrack mTrack = null;
+    private final IBinder mBinder = new LocalBinder();
 
     public PlayerService() {
         super();
     }
 
 
-    /**
-     * Handle action Play in the provided background thread with the provided
-     * parameters.
-     */
     private void handleActionPlay(ParcelableTrack track) {
         Log.i(LOG_TAG, " in handleActionPlay");
 
@@ -69,10 +66,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    /**
-     * Handle action Baz in the provided background thread with the provided
-     * parameters.
-     */
     private void handleActionPause(ParcelableTrack track) {
         Log.i(LOG_TAG, " in handleActionPause");
         switch (CURRENT_STATE) {
@@ -127,7 +120,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
@@ -140,5 +133,31 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
         return false;
+    }
+
+    public class LocalBinder extends Binder {
+        PlayerService getService() {
+            return PlayerService.this;
+        }
+    }
+
+    public int getDuration() {
+        if (CURRENT_STATE != STATE_IDLE) {
+            return mMediaPlayer.getDuration();
+        }
+        return 0;
+    }
+
+    public int getCurrentPosition() {
+        if (CURRENT_STATE != STATE_IDLE) {
+            return mMediaPlayer.getCurrentPosition();
+        }
+        return 0;
+    }
+
+    public void setPosition(int position) {
+        if (CURRENT_STATE != STATE_IDLE) {
+            mMediaPlayer.seekTo(position);
+        }
     }
 }
