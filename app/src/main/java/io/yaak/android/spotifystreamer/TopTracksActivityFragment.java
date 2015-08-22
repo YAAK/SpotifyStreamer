@@ -40,10 +40,18 @@ public class TopTracksActivityFragment extends Fragment {
     }
 
     public void updateView() {
+        boolean isConnected = false;
+        ConnectivityManager cm = null;
+
         Context context = getActivity();
-        ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        if (context!= null) {
+            cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm!= null) {
+                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+            }
+        }
+
         if (isConnected) {
             trackAdapter.clear();
             if (topTracksList.size() > 0) {
@@ -69,15 +77,27 @@ public class TopTracksActivityFragment extends Fragment {
         Log.v(LOG_TAG, " in onCreate");
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState == null){
+        if (savedInstanceState == null) {
             Intent intent = getActivity().getIntent();
-            mArtistId = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistId");
-            mArtistName = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistName");
-            ((ActionBarActivity) getActivity()).getSupportActionBar().setSubtitle(mArtistName);
-            if (mArtistId != null) {
-                (new TopTracksTask()).execute(mArtistId);
+            if (intent != null && (intent.getAction() == null || !intent.getAction().equals(Intent.ACTION_MAIN))) {
+                mArtistId = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistId");
+                mArtistName = intent.getStringExtra(this.getClass().getPackage().toString() + "ArtistName");
+                ((ActionBarActivity) getActivity()).getSupportActionBar().setSubtitle(mArtistName);
+                if (mArtistId != null) {
+                    (new TopTracksTask()).execute(mArtistId);
+                }
+            } else {
+                Bundle args = getArguments();
+                if (args != null) {
+                    Log.v(LOG_TAG, " we received a bundle " + args.getString(this.getClass().getPackage().toString() + "ArtistId"));
+                    mArtistId = args.getString(this.getClass().getPackage().toString() + "ArtistId");
+                    mArtistName = args.getString(this.getClass().getPackage().toString() + "ArtistName");
+                    ((ActionBarActivity) getActivity()).getSupportActionBar().setSubtitle(mArtistName);
+                    if (mArtistId != null) {
+                        (new TopTracksTask()).execute(mArtistId);
+                    }
+                }
             }
-
         } else if (!savedInstanceState.containsKey("topTracksList")) {
             // What should I do?
         } else {
@@ -89,8 +109,7 @@ public class TopTracksActivityFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log.v(LOG_TAG, " in onCreateView");
 
         View rootView =  inflater.inflate(R.layout.fragment_top_tracks, container, false);
@@ -103,17 +122,12 @@ public class TopTracksActivityFragment extends Fragment {
         tracksListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 ParcelableTrack selectedTrack = trackAdapter.getItem(position);
-                String extraBaseStr = this.getClass().getPackage().toString();
                 Bundle tracksBundle = new Bundle();
                 tracksBundle.putParcelableArrayList("topTracksList",(ArrayList)topTracksList);
 
-                Intent playerIntent = new Intent(getActivity(), PlayerActivity.class)
-                        .putExtra(extraBaseStr + ".Track", selectedTrack)
-                        .putExtra(extraBaseStr + ".ArtistName", mArtistName)
-                        .putExtra(extraBaseStr + ".Position", position)
-                        .putExtra(extraBaseStr + ".TrackBundle", tracksBundle);
-                startActivity(playerIntent);
+                ((MainActivityFragment.Callback) getActivity()).onSongSelected(topTracksList, position, mArtistName, selectedTrack);
             }
         });
 

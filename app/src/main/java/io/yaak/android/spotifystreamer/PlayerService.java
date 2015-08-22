@@ -23,15 +23,16 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     private static final String EXTRA_TRACK = "io.yaak.android.spotifystreamer.Track";
 
-    private static final int STATE_IDLE = 0;
-    private static final int STATE_INITIALIZED = 1;
-    private static final int STATE_PREPARING = 2;
-    private static final int STATE_PREPARED = 3;
-    private static final int STATE_STARTED = 4;
-    private static final int STATE_PAUSED = 5;
-    private static final int STATE_STOPPED = 6;
-    private static final int STATE_PLAYBACK_COMPLETE = 7;
-    private static int CURRENT_STATE = 0;
+    public static final int STATE_IDLE = 0;
+    public static final int STATE_INITIALIZED = 1;
+    public static final int STATE_PREPARING = 2;
+    public static final int STATE_PREPARED = 3;
+    public static final int STATE_STARTED = 4;
+    public static final int STATE_PAUSED = 5;
+    public static final int STATE_STOPPED = 6;
+    public static final int STATE_PLAYBACK_COMPLETE = 7;
+    public static final int STATE_ERROR = 8;
+    public int CURRENT_STATE = 0;
 
     MediaPlayer mMediaPlayer = null;
     ParcelableTrack mTrack = null;
@@ -49,20 +50,19 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             if (CURRENT_STATE == STATE_PAUSED && mTrack!= null && mTrack.id.equals(track.id)) {
                 mMediaPlayer.start();
                 CURRENT_STATE = STATE_STARTED;
+            } else if (CURRENT_STATE == STATE_STARTED && mTrack!= null && mTrack.id.equals(track.id)) {
+
             } else {
-                mTrack = new ParcelableTrack(track);
-                mMediaPlayer.reset();
-                mMediaPlayer.setDataSource(track.preview_url); // initialize it here
-                CURRENT_STATE = STATE_INITIALIZED;
-                mMediaPlayer.setOnPreparedListener(this);
-                mMediaPlayer.prepareAsync();
-                CURRENT_STATE = STATE_PREPARING;
+                    mTrack = new ParcelableTrack(track);
+                    mMediaPlayer.reset();
+                    mMediaPlayer.setDataSource(track.preview_url); // initialize it here
+                    CURRENT_STATE = STATE_INITIALIZED;
+                    mMediaPlayer.setOnPreparedListener(this);
+                    mMediaPlayer.prepareAsync();
+                    CURRENT_STATE = STATE_PREPARING;
             }
         } catch(IOException ex) {
             Log.e(LOG_TAG, ex.getMessage());
-        } finally {
-            //Async(); // prepare async to not block main thread
-            //handleActionPlay(param1, param2);
         }
     }
 
@@ -85,6 +85,12 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     @Override
     public void onCreate() {
         mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                CURRENT_STATE = STATE_PLAYBACK_COMPLETE;
+            }
+        });
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         CURRENT_STATE = STATE_IDLE;
     }
@@ -132,6 +138,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        CURRENT_STATE = STATE_ERROR;
         return false;
     }
 
@@ -142,7 +149,12 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     public int getDuration() {
-        if (CURRENT_STATE != STATE_IDLE) {
+        if (CURRENT_STATE == STATE_PREPARED
+                || CURRENT_STATE == STATE_STARTED
+                || CURRENT_STATE == STATE_PAUSED
+                || CURRENT_STATE == STATE_STOPPED
+                || CURRENT_STATE == STATE_PLAYBACK_COMPLETE
+                ) {
             return mMediaPlayer.getDuration();
         }
         return 0;
@@ -160,4 +172,9 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.seekTo(position);
         }
     }
+
+    public int getState() {
+        return CURRENT_STATE;
+    }
+
 }

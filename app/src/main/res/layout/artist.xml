@@ -2,7 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/view_artist"
     android:orientation="horizontal"
-    style="@style/ListItem" >
+    style="@style/ListItem"
+    android:background="@drawable/artist_selector">
 
     <ImageView
         style="@style/ListItemImage"

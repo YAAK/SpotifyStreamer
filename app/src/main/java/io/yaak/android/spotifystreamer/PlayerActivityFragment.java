@@ -1,5 +1,7 @@
 package io.yaak.android.spotifystreamer;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -8,11 +10,12 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -27,7 +30,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 
-public class PlayerActivityFragment extends Fragment {
+public class PlayerActivityFragment extends DialogFragment {
 
     private final String LOG_TAG = PlayerActivityFragment.class.getSimpleName();
     private String mArtistName;
@@ -37,38 +40,53 @@ public class PlayerActivityFragment extends Fragment {
     PlayerService mService;
     boolean mBound = false;
     SeekBar mSeekBar = null;
+    ImageButton playBtn = null;
+    TextView mTimeRemaining = null;
+    TextView mTimePassed = null;
+    String extraBaseStr;
 
     public PlayerActivityFragment() {
         // Required empty public constructor
+        extraBaseStr = this.getClass().getPackage().toString();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.v(LOG_TAG, " in onCreate");
+        setRetainInstance(true);
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
+            mArtistName = savedInstanceState.getString("mArtistName");
+            mPosition = savedInstanceState.getInt("mPosition");
+            mTrack = savedInstanceState.getParcelable("mTrack");
+            mTopTracksList = savedInstanceState.getParcelableArrayList("mTopTracksList");
 
+
+        } else {
+            Bundle args = getArguments();
+
+            mArtistName = args.getString(this.getClass().getPackage().toString() + ".ArtistName");
+            final Bundle mTrackBundle = args.getBundle(this.getClass().getPackage().toString() + ".TrackBundle");
+            mPosition = args.getInt(this.getClass().getPackage().toString() + ".Position");
+
+            Log.v(LOG_TAG, "Artist Name" + mArtistName);
+
+            // Which track?
+            mTopTracksList = mTrackBundle.getParcelableArrayList("topTracksList");
+            mTrack = mTopTracksList.get(mPosition);
         }
 
-        //(new Thread(new seekBarUpdater())).start();
         updateView();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log.v(LOG_TAG, " in onCreateView");
-        final String extraBaseStr = this.getClass().getPackage().toString();
 
-        // Read the intent and extras
-        Intent intent = getActivity().getIntent();
-
-        mArtistName = intent.getStringExtra(extraBaseStr + ".ArtistName");
-        final Bundle mTrackBundle = intent.getBundleExtra(extraBaseStr + ".TrackBundle");
-        mPosition = intent.getExtras().getInt(extraBaseStr + ".Position");
-
-        // Which track?
-        mTopTracksList = mTrackBundle.getParcelableArrayList("topTracksList");
-        mTrack = mTopTracksList.get(mPosition);
+        Dialog dialog = getDialog();
+        if (dialog != null) {
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        }
 
         // Bind to PlayerService
         Intent bindIntent = new Intent(getActivity(), PlayerService.class);
@@ -80,9 +98,11 @@ public class PlayerActivityFragment extends Fragment {
         final TextView albumName = (TextView) rootView.findViewById(R.id.player_album_name);
         final TextView trackName = (TextView) rootView.findViewById(R.id.player_track_name);
         final ImageView albumImage = (ImageView) rootView.findViewById(R.id.player_album_image);
-        final ImageButton playBtn = (ImageButton) rootView.findViewById(R.id.btn_play);
+        playBtn = (ImageButton) rootView.findViewById(R.id.btn_play);
         final ImageButton nextBtn = (ImageButton) rootView.findViewById(R.id.btn_next);
         final ImageButton prevBtn = (ImageButton) rootView.findViewById(R.id.btn_prev);
+        mTimePassed = (TextView) rootView.findViewById(R.id.time_passed);
+        mTimeRemaining = (TextView) rootView.findViewById(R.id.time_remaining);
 
         // Filling in the view
         artistName.setText(mArtistName);
@@ -202,28 +222,31 @@ public class PlayerActivityFragment extends Fragment {
 
             }
         });
-
-
         return rootView;
     }
 
     @Override
     public void onDestroyView() {
+        if (getDialog() != null && getRetainInstance()) {
+            // From : http://stackoverflow.com/a/9848730/1204714
+            getDialog().setOnDismissListener(null);
+        }
+        if (mBound) {
+            getActivity().unbindService(mConnection);
+        }
         super.onDestroyView();
-        // TODO Stop PlayerService
-        //
-
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         Log.i(LOG_TAG, " in onSaveInstanceState");
-            outState.putParcelableArrayList("topTrackList", new ArrayList(mTopTracksList));
-            outState.putParcelable("track", mTrack);
-            outState.putInt("position", mPosition);
+        outState.putParcelableArrayList("topTrackList", new ArrayList(mTopTracksList));
+        outState.putParcelable("track", mTrack);
+        outState.putInt("position", mPosition);
         outState.putString("artist", mArtistName);
         super.onSaveInstanceState(outState);
     }
+
 
     public void updateView() {
         Context context = getActivity();
@@ -236,34 +259,29 @@ public class PlayerActivityFragment extends Fragment {
             Toast toast = Toast.makeText(context, R.string.no_internet_connection, Toast.LENGTH_SHORT);
             toast.show();
         }
-
-
     }
-
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
 
         private final String LOG_TAG = "ServiceConnection";
+        private Timer seekBarProgressTimer = new Timer("seekBarProgressTimer");
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             PlayerService.LocalBinder binder = (PlayerService.LocalBinder) service;
             mService = binder.getService();
             mBound = true;
 
-            final Timer seekBarProgressTimer = new Timer("seekBarProgressTimer");
             seekBarProgressTimer.schedule(new seekBarProgressUpdater(), 0, 300);
-
-            Log.v(LOG_TAG, "Service Connected");
-
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             mBound = false;
+            seekBarProgressTimer.cancel();
+            seekBarProgressTimer = null;
         }
     };
 
@@ -271,12 +289,47 @@ public class PlayerActivityFragment extends Fragment {
         private final String LOG_TAG = "seekBarProgressUpdater";
         @Override
         public void run() {
-            if (mSeekBar != null && mBound) {
-                int dur = mService.getDuration();
-                mSeekBar.setMax(dur);
-                int prog = mService.getCurrentPosition();
-                mSeekBar.setProgress(prog);
-                //Log.v(LOG_TAG, "Updating SeekBar Progress " + prog);
+            Activity activity = getActivity();
+            if (mSeekBar != null && mBound && mService.getState() == mService.STATE_STARTED) {
+                final int dur = mService.getDuration();
+                final int prog = mService.getCurrentPosition();
+                if (activity != null) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mSeekBar.setMax(dur);
+                            mSeekBar.setProgress(prog);
+                            int remain = (int) Math.round((dur - prog) / 1000.0);
+                            int passed = (int) Math.round(prog / 1000.0);
+                            String remainTime = String.format("%02d:%02d", remain / 60, remain % 60);
+                            String passedTime = String.format("%02d:%02d", passed / 60, passed % 60);
+                            if (remain < 1000 && remain != 0) {
+                                mTimeRemaining.setText(remainTime);
+                                mTimePassed.setText(passedTime);
+                            } else {
+                                mTimeRemaining.setText("");
+                                mTimePassed.setText("");
+                            }
+                        }
+                    });
+                }
+            }
+            if (mSeekBar != null && mBound && mService.getState() == mService.STATE_PLAYBACK_COMPLETE) {
+                if (activity != null) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            final int dur = mService.getDuration();
+                            mSeekBar.setProgress(0);
+                            mTimePassed.setText("00:00");
+                            int duration = (int) Math.round(dur / 1000);
+                            mTimeRemaining.setText(String.format("%02d:%02d", duration / 60, duration % 60));
+                            playBtn.setTag("Play");
+                            ((ImageView) playBtn).setImageResource(android.R.drawable.ic_media_play);
+                        }
+                    });
+                }
+
             }
 
         }

@@ -1,7 +1,6 @@
 package io.yaak.android.spotifystreamer;
 
 import android.content.Context;
-import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -36,6 +35,20 @@ public class MainActivityFragment extends Fragment {
     protected static ArtistAdapter artistAdapter;
     protected List<ParcelableArtist> artistsList = new ArrayList<>();
     private String searchQuery = null;
+    public static boolean mTwoPane;
+
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * DetailFragmentCallback for when an item has been selected.
+         */
+        public void onArtistSelected(ParcelableArtist artist);
+        public void onSongSelected(List topTracksList, int position, String artistName, ParcelableTrack selectedTrack);
+    }
 
     public MainActivityFragment() {
     }
@@ -69,6 +82,12 @@ public class MainActivityFragment extends Fragment {
         Log.v(LOG_TAG, " in onCreate");
         super.onCreate(savedInstanceState);
 
+        if (getActivity().findViewById(R.id.top_tracks_fragment_container) != null) {
+            mTwoPane = true;
+        } else {
+            mTwoPane = false;
+        }
+
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("artistsList")) {
                 artistsList = savedInstanceState.getParcelableArrayList("artistsList");
@@ -88,17 +107,14 @@ public class MainActivityFragment extends Fragment {
 
         View rootView =  inflater.inflate(R.layout.fragment_main, container, false);
         ListView artistsListView = (ListView) rootView.findViewById(R.id.listview_artists);
+        artistsListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         artistAdapter = new ArtistAdapter(this.getActivity(), new ArrayList<>(artistsList));
         artistsListView.setAdapter(artistAdapter);
-
         artistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ParcelableArtist selectedArtist = artistAdapter.getItem(position);
-                Intent topSongsIntent = new Intent(getActivity(), TopTracksActivity.class)
-                        .putExtra(getActivity().getClass().getPackage().toString() + "ArtistId", selectedArtist.id)
-                        .putExtra(getActivity().getClass().getPackage().toString() + "ArtistName", selectedArtist.name);
-                startActivity(topSongsIntent);
+                ((Callback) getActivity()).onArtistSelected(selectedArtist);
             }
         });
 
