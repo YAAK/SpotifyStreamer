@@ -17,13 +17,11 @@ public class PlayerActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
-
+        setContentView(R.layout.activity_player);
         if (savedInstanceState == null) {
             FragmentManager fragmentManager = getSupportFragmentManager();
             DialogFragment playerActivityFragment = new PlayerActivityFragment();
-
 
             if(MainActivity.mTwoPane) {
                 playerActivityFragment.show(fragmentManager,"playerActivityFragment");
@@ -50,7 +48,7 @@ public class PlayerActivity extends ActionBarActivity {
                     playerActivityFragment.setArguments(args);
                 }
 
-                setContentView(R.layout.activity_player);
+
                 fragmentManager.beginTransaction()
                         .add(R.id.player_fragment_container, playerActivityFragment)
                         .commit();
